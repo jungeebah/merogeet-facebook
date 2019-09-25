@@ -29,33 +29,30 @@ var sanitize_url = function(url){
         return;
     }
   };
-
-app.get('/', function(req, res) {
-    (async() =>{
+  
+function facebook_search(facebook_url){
+    var jsonData = {};
+    return new Promise(async (resolve, reject) => {
         try{
-            var cleaned_url = clean_url(req.query.url);
-            console.log(cleaned_url);
-            var URL = cleaned_url + '/about/'
+            var cleaned_url = clean_url(facebook_url);
+            var url = cleaned_url + '/about/'
                 const browser = await puppeteer.launch({
                     args: ['--no-sandbox', '--disable-setuid-sandbox']
                 });
                 const page = await browser.newPage();
                 page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36')
 
-                await page.goto(URL);
-                await page.waitForSelector(".img")
+                await page.goto(url);
+                await page.waitForSelector(".img");
 
                 try{
-                    const infos = await page.$$('div[class="_5aj7 _3-8j"]')
-                    var jsonData = {};
-                    var website = [];
+                    const infos = await page.$$('div[class="_5aj7 _3-8j"]');
                     for (const info of infos){
                         const photo_link = await info.$eval('img', img => img.src);
                         const inner_text = await page.evaluate(info => info.innerText,info); 
                         var web_url=null;
                         if (sanitize_url(inner_text)){
                              web_url = sanitize_url(inner_text);
-                             console.log(web_url);
                         }
                         if (photo_link.indexOf('EaDvTjOwxIV') >0 || web_url){
                             jsonData["website"] = inner_text;
@@ -78,21 +75,25 @@ app.get('/', function(req, res) {
                             jsonData["soundcloud]"]= inner_text;
                         }
                     }
-                    
-                    if (jsonData){
-                        res.send(jsonData);
-                    }else{
-                        res.send('Nothing')
-                    }
                     await browser.close();
+                    return resolve(jsonData);
                 }
                 catch(e){
-                    process.exit()
+                    return reject(e)
                 }
             }
-                catch(e){
-                console.log('The error', e)
-             }
+            catch(e){
+                return reject(e)
+            }
+    })
+}
+
+app.get('/', function(req, res) {
+    (async() =>{
+        facebook_search(req.query.url).then(function(result){
+            res.setHeader('Content-Type', 'text/html');
+            res.send(result);
+        }).catch(console.error);
         })();
 });
 
