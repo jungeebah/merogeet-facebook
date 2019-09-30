@@ -1,10 +1,16 @@
 const express = require('express');
 const app = express();
+const url = require('url');
 const puppeteer = require('puppeteer');
 var validUrl = require('valid-url');
 const port = process.env.PORT || 8080;
 
+
 var clean_url = function(url){
+    myURL = new URL(url)
+    var pos1 = myURL.pathname.indexOf("\/"); 
+    var pos2 = myURL.pathname.indexOf('\/',pos1+1);
+    url = myURL.origin+myURL.pathname.slice(0,pos2);
     url = url.replace(/\/+$/, "");
     return url;
 }
@@ -50,6 +56,7 @@ function facebook_search(facebook_url){
                     for (const info of infos){
                         const photo_link = await info.$eval('img', img => img.src);
                         const inner_text = await page.evaluate(info => info.innerText,info); 
+                        
                         var web_url=null;
                         if (sanitize_url(inner_text)){
                              web_url = sanitize_url(inner_text);
@@ -64,7 +71,6 @@ function facebook_search(facebook_url){
                             jsonData["twitter"]=inner_text;
                         }
                         else if (photo_link.indexOf('RTHgMeQuiIN') >0 || photo_link.indexOf('7xu6qkZsbtP') >0 || inner_text.indexOf('youtube')>0){
-                            console.log(inner_text)
                             if (match_regex(inner_text)){
                                 jsonData["youtube"]=inner_text;
                             }else{
