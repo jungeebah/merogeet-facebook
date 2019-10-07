@@ -93,12 +93,16 @@ function facebook_search(facebook_url){
 }
 
 app.get('/', function(req, res) {
-    (async() =>{
-        facebook_search(req.query.url).then(function(result){
-            res.setHeader('Content-Type', 'text/html');
-            res.send(result);
-        }).catch(console.error);
-        })();
+    if (Object.keys(req.query).length === 0){
+        res.send('Use url key')
+    }else{
+        (async() =>{
+            facebook_search(req.query.url).then(function(result){
+                res.setHeader('Content-Type', 'text/html');
+                res.send(result);
+            }).catch(console.error);
+            })();
+    }
 });
 
 app.listen(port, function() {
